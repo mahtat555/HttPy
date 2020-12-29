@@ -109,12 +109,56 @@ STATUS_CODES_SERVER_ERRORS = {
 HTTP_STATUS_CODES = {
     # 1xx informational response
     "1xx": STATUS_CODES_INFORMATIONAL_RESPONSE,
+    **STATUS_CODES_INFORMATIONAL_RESPONSE,
     # 2xx successful
     "2xx": STATUS_CODES_SUCCESSFUL,
+    **STATUS_CODES_SUCCESSFUL,
     # 3xx redirection
     "3xx": STATUS_CODES_REDIRECTION,
+    **STATUS_CODES_REDIRECTION,
     # 4xx client error
     "4xx": STATUS_CODES_CLIENT_ERRORS,
+    **STATUS_CODES_CLIENT_ERRORS,
     # 5xx server error
-    "5xx": STATUS_CODES_SERVER_ERRORS
+    "5xx": STATUS_CODES_SERVER_ERRORS,
+    **STATUS_CODES_SERVER_ERRORS
 }
+
+
+class HTTPStatusCodes:
+    """List of all HTTP status codes.
+
+    """
+    @staticmethod
+    def category(_category):
+        """Return the HTTP status codes for a specific category.
+
+        """
+        if not isinstance(_category, str):
+            raise TypeError("_category: is a str")
+
+        if _category in HTTP_STATUS_CODES:
+            return HTTP_STATUS_CODES[_category]
+
+        raise TypeError("Invalid category")
+
+    @staticmethod
+    def message(code):
+        """Returns HTTP status message.
+
+        """
+        code = int(code)
+        if code in HTTP_STATUS_CODES:
+            return HTTP_STATUS_CODES[code]
+        return None
+
+    @staticmethod
+    def code(message):
+        """Returns HTTP status message.
+
+        """
+        values = list(HTTP_STATUS_CODES.values())
+        keys = list(HTTP_STATUS_CODES.keys())
+        if message in values:
+            return keys[values.index(message)]
+        return None
