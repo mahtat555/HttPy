@@ -151,8 +151,9 @@ class HTTPStatusCodes:
 
         """
         code = int(code)
-        if code in HTTP_STATUS_CODES:
-            return HTTP_STATUS_CODES[code]
+        for category in HTTP_STATUS_CODES:
+            if code in HTTP_STATUS_CODES[category]:
+                return HTTP_STATUS_CODES[category][code]
         return None
 
     @staticmethod
@@ -160,10 +161,11 @@ class HTTPStatusCodes:
         """Returns HTTP status message.
 
         """
-        values = list(HTTP_STATUS_CODES.values())
-        keys = list(HTTP_STATUS_CODES.keys())
-        if message in values:
-            return keys[values.index(message)]
+        for category in HTTP_STATUS_CODES:
+            values = list(HTTP_STATUS_CODES[category].values())
+            keys = list(HTTP_STATUS_CODES[category].keys())
+            if message in values:
+                return keys[values.index(message)]
         return None
 
 
