@@ -2,6 +2,8 @@
 
 """
 
+from collections import namedtuple
+
 # 1xx informational response
 STATUS_CODES_INFORMATIONAL_RESPONSE = {
     100: "Continue",
@@ -109,20 +111,21 @@ STATUS_CODES_SERVER_ERRORS = {
 HTTP_STATUS_CODES = {
     # 1xx informational response
     "1xx": STATUS_CODES_INFORMATIONAL_RESPONSE,
-    **STATUS_CODES_INFORMATIONAL_RESPONSE,
     # 2xx successful
     "2xx": STATUS_CODES_SUCCESSFUL,
-    **STATUS_CODES_SUCCESSFUL,
     # 3xx redirection
     "3xx": STATUS_CODES_REDIRECTION,
-    **STATUS_CODES_REDIRECTION,
     # 4xx client error
     "4xx": STATUS_CODES_CLIENT_ERRORS,
-    **STATUS_CODES_CLIENT_ERRORS,
     # 5xx server error
     "5xx": STATUS_CODES_SERVER_ERRORS,
-    **STATUS_CODES_SERVER_ERRORS
 }
+
+
+def _str2name(name):
+    for char in " -/'":
+        name = name.replace(char, "_")
+    return name.upper()
 
 
 class HTTPStatusCodes:
@@ -135,7 +138,7 @@ class HTTPStatusCodes:
 
         """
         if not isinstance(_category, str):
-            raise TypeError("_category: is a str")
+            raise TypeError("_category is a str")
 
         if _category in HTTP_STATUS_CODES:
             return HTTP_STATUS_CODES[_category]
@@ -162,3 +165,20 @@ class HTTPStatusCodes:
         if message in values:
             return keys[values.index(message)]
         return None
+
+
+# This class represent a HTTP status code/message
+_StatusCode = namedtuple('StatusCode', ['code', 'message'])
+
+# Add list of categories to the HTTPStatusCodes class
+setattr(HTTPStatusCodes, 'CATEGORIES', list(HTTP_STATUS_CODES.keys()))
+
+# Add all HTTP status codes categories to the HTTPStatusCodes class
+for _category in HTTP_STATUS_CODES:
+    setattr(HTTPStatusCodes, 'CATEGORY_' +
+            _category, HTTP_STATUS_CODES[_category])
+
+# Add  all HTTP status messages to the HTTPStatusCodes class
+for _category in HTTP_STATUS_CODES.values():
+    for _code, msg in _category.items():
+        setattr(HTTPStatusCodes, _str2name(msg), _StatusCode(_code, msg))
