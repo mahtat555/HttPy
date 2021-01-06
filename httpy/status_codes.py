@@ -1,4 +1,4 @@
-""" HTTP Status Codes
+""" HTTP Status Codes.
 
 """
 

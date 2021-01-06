@@ -1,6 +1,8 @@
 """HyperText Transfer Protocol, Python module
 """
 
+from .status_codes import HTTPStatusCodes
+
 # Author info
 __email__ = "yassinmhtat@gmail.com"
 __author__ = "MAHTAT Yassin"
@@ -15,5 +17,5 @@ __version__ = "0.0.1"
 # List of public objects in this package
 __all__ = [
     "__email__", "__author__", "__title__", "__url__", "__license__",
-    "__date__", "__version__"
+    "__date__", "__version__", "HTTPStatusCodes"
 ]
