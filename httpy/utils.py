@@ -58,3 +58,34 @@ async def fromreader(reader):
 
     HTTPMsg = type("HTTPMsg", (_Data,), {})
     return HTTPMsg(start_line=start_line, headers=headers, body=body)
+
+
+def tohttpmsg(start_line, headers, body=b""):
+    """Create a valid HTTP message encoded in ASCII.
+
+    """
+    # Start line
+    if not isinstance(start_line, (list, tuple)):
+        raise TypeError("expected list or tuple")
+
+    start_line = "{} {} {}".format(*start_line).encode()
+
+    # Headers
+    if not isinstance(headers, dict):
+        raise TypeError("expected dict")
+
+    _headers = []
+    for key, value in headers.items():
+        _headers.append("{}: {}".format(key, value).encode())
+
+    # Empty libe
+    empty_line = b""
+
+    # Body
+    if isinstance(body, str):
+        body = body.encode()
+
+    if not isinstance(body, bytes):
+        raise TypeError("expected bytes or str")
+
+    return b"\r\n".join([start_line, *_headers, empty_line, body])
