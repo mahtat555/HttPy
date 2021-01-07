@@ -3,7 +3,7 @@
 """
 
 
-class _Data:
+class Data:
     """ This class  is meant to produce a string representation of
     the object's data.
 
@@ -56,7 +56,7 @@ async def fromreader(reader):
     # Body
     body = await reader.read()
 
-    HTTPMsg = type("HTTPMsg", (_Data,), {})
+    HTTPMsg = type("HTTPMsg", (Data,), {})
     return HTTPMsg(start_line=start_line, headers=headers, body=body)
 
 
