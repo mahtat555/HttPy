@@ -26,3 +26,28 @@ class _Data:
 
     def __repr__(self):
         return self.__str__()
+
+
+async def fromreader(reader):
+    """This function converts data from an HTTP message (Request or Response)
+    into a Python object.
+
+    """
+    # Start line
+    line = await reader.readline()
+    start_line = line.split()
+
+    # Headers
+    headers = {}
+    async for line in reader:
+        line = line.rstrip()
+        if not line:
+            break
+        key, value = line.split(b":", 1)
+        headers[key] = value.strip()
+
+    # Body
+    body = await reader.read()
+
+    HTTPMsg = type("HTTPMsg", (_Data,), {})
+    return HTTPMsg(start_line=start_line, headers=headers, body=body)
