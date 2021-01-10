@@ -2,10 +2,8 @@
 
 """
 
-from .utils import Data
 
-
-class URL(Data):
+class URL:
     """ URL class
     This class represents the different elements of a URL.
 
