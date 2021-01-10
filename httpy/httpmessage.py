@@ -3,6 +3,8 @@
 
 """
 
+from collections import namedtuple as _namedtuple
+
 
 class Request():
     """ Request class
@@ -25,7 +27,7 @@ async def fromreader(reader):
     """
     # Start line
     line = await reader.readline()
-    start_line = line.split()
+    startline = line.split()
 
     # Headers
     headers = {}
@@ -39,7 +41,8 @@ async def fromreader(reader):
     # Body
     body = await reader.read()
 
-    return start_line, headers, body
+    return namedtuple(
+        "HTTPMessage", startline=startline, headers=headers, body=body)
 
 
 def tohttpmsg(start_line, headers, body=b""):
@@ -71,3 +74,10 @@ def tohttpmsg(start_line, headers, body=b""):
         raise TypeError("expected bytes or str")
 
     return b"\r\n".join([start_line, *_headers, empty_line, body])
+
+
+def namedtuple(name, **kwargs):
+    """ Create an object to structure the results
+
+    """
+    return _namedtuple(name, kwargs.keys())(kwargs.values())
