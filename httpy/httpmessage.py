@@ -3,17 +3,36 @@
 
 """
 
-from collections import namedtuple as _namedtuple
+
+import abc
 
 
-class Request():
+class HTTPMessage:
+    """ HTTPMessage class
+    This class is used to create a valid HTTP Message (Request or Response).
+
+    """
+
+    def __init__(self, startline, headers, body):
+        self.startline = startline
+        self.headers = headers
+        self.body = body
+
+    @abc.abstractproperty
+    def startline(self):
+        """ abstract property
+        Get and set the start line of an HTTP message.
+        """
+
+
+class Request:
     """ Request class
     This class is used to create a valid HTTP Request.
 
     """
 
 
-class Response():
+class Response:
     """ Response class
     This class is used to create a valid HTTP Response.
 
@@ -41,8 +60,7 @@ async def fromreader(reader):
     # Body
     body = await reader.read()
 
-    return namedtuple(
-        "HTTPMessage", startline=startline, headers=headers, body=body)
+    return startline, headers, body
 
 
 def tohttpmsg(start_line, headers, body=b""):
@@ -74,10 +92,3 @@ def tohttpmsg(start_line, headers, body=b""):
         raise TypeError("expected bytes or str")
 
     return b"\r\n".join([start_line, *_headers, empty_line, body])
-
-
-def namedtuple(name, **kwargs):
-    """ Create an object to structure the results
-
-    """
-    return _namedtuple(name, kwargs.keys())(kwargs.values())
