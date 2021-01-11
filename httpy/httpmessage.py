@@ -18,10 +18,48 @@ class HTTPMessage:
         self.headers = headers
         self.body = body
 
+    @property
+    def headers(self):
+        """ Return the headers of an HTTP message.
+
+        """
+        return self.__headers
+
+    @headers.setter
+    def headers(self, _headers):
+        """ Define the headers of an HTTP message.
+
+        """
+        if not isinstance(_headers, dict):
+            raise TypeError("expected dict")
+
+        self.__headers = _headers
+
+    @property
+    def body(self):
+        """ Return the body of an HTTP message
+
+        """
+        return self.__body
+
+    @body.setter
+    def body(self, _body):
+        """ Define the body of an HTTP message.
+
+        """
+        if isinstance(_body, str):
+            _body = _body.encode()
+
+        if not isinstance(_body, bytes):
+            raise TypeError("expected str or bytes")
+
+        self.__body = _body
+
     @abc.abstractproperty
     def startline(self):
         """ abstract property
         Get and set the start line of an HTTP message.
+
         """
 
 
