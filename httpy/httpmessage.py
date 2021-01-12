@@ -63,18 +63,52 @@ class HTTPMessage:
         """
 
 
-class Request:
+class Request(HTTPMessage):
     """ Request class
     This class is used to create a valid HTTP Request.
 
     """
 
+    @property
+    def startline(self):
+        """ Return the start line of an HTTP request.
 
-class Response:
+        """
+        return self.method, self.path, self.version
+
+    @startline.setter
+    def startline(self, startline):
+        """ Define the start line of an HTTP request.
+
+        """
+        self.method, self.path, self.version = startline
+
+    def __repr__(self):
+        return "<Request [{}]>".format(self.method)
+
+
+class Response(HTTPMessage):
     """ Response class
     This class is used to create a valid HTTP Response.
 
     """
+
+    @property
+    def startline(self):
+        """ Return the start line of an HTTP response.
+
+        """
+        return self.version, self.statuscode, self.statusmessage
+
+    @startline.setter
+    def startline(self, startline):
+        """ Define the start line of an HTTP response.
+
+        """
+        self.version, self.statuscode, self.statusmessage = startline
+
+    def __repr__(self):
+        return "<Response [{}]>".format(self.statuscode)
 
 
 async def fromreader(reader):
