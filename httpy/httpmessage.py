@@ -14,9 +14,24 @@ class HTTPMessage:
     """
 
     def __init__(self, startline, headers, body):
+
         self.startline = startline
         self.headers = headers
         self.body = body
+
+    def tostr(self):
+        """ This function generates a valid HTTP message
+        encoded in ASCII.
+
+        """
+        return tohttpmsg(self.startline, self.headers, self.body)
+
+    def fromstr(self, reader):
+        """ This function converts an HTTP message encoded in ASCII
+        into a Python object.
+
+        """
+        self.startline, self.headers, self.body = fromreader(reader)
 
     @property
     def headers(self):
