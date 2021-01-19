@@ -69,6 +69,14 @@ class Request(HTTPMessage):
 
     """
 
+    def __init__(self, method=None, path=None, version=None, headers=None,
+                 body=b""):
+
+        if headers is None:
+            headers = {}
+
+        super().__init__((method, path, version), headers, body)
+
     @property
     def startline(self):
         """ Return the start line of an HTTP request.
@@ -92,6 +100,14 @@ class Response(HTTPMessage):
     This class is used to create a valid HTTP Response.
 
     """
+
+    def __init__(self, version=None, statuscode=None, statusmessage=None,
+                 headers=None, body=b""):
+
+        if headers is None:
+            headers = {}
+
+        super().__init__((version, statuscode, statusmessage), headers, body)
 
     @property
     def startline(self):
@@ -118,7 +134,7 @@ async def fromreader(reader):
     """
     # Start line
     line = await reader.readline()
-    startline = line.split()
+    startline = line.split(maxsplit=2)
 
     # Headers
     headers = {}
