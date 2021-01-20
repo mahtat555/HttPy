@@ -45,7 +45,7 @@ class HTTPMessage:
         """ Define the headers of an HTTP message.
 
         """
-        if not isinstance(_headers, dict):
+        if not isinstance(_headers, dict) and _headers:
             raise TypeError("expected dict")
 
         self.__headers = _headers
@@ -65,7 +65,7 @@ class HTTPMessage:
         if isinstance(_body, str):
             _body = _body.encode()
 
-        if not isinstance(_body, bytes):
+        if not isinstance(_body, bytes) and _body:
             raise TypeError("expected str or bytes")
 
         self.__body = _body
@@ -85,10 +85,7 @@ class Request(HTTPMessage):
     """
 
     def __init__(self, method=None, path=None, version=None, headers=None,
-                 body=b""):
-
-        if headers is None:
-            headers = {}
+                 body=None):
 
         super().__init__((method, path, version), headers, body)
 
@@ -117,10 +114,7 @@ class Response(HTTPMessage):
     """
 
     def __init__(self, version=None, statuscode=None, statusmessage=None,
-                 headers=None, body=b""):
-
-        if headers is None:
-            headers = {}
+                 headers=None, body=None):
 
         super().__init__((version, statuscode, statusmessage), headers, body)
 
@@ -174,7 +168,13 @@ def tohttpmsg(start_line, headers, body=b""):
     if not isinstance(start_line, (list, tuple)):
         raise TypeError("expected list or tuple")
 
-    start_line = "{} {} {}".format(*start_line).encode()
+    startline = []
+    for value in start_line:
+        if isinstance(value, bytes):
+            value = value.decode()
+        startline.append(value)
+
+    startline = "{} {} {}".format(*startline).encode()
 
     # Headers
     if not isinstance(headers, dict):
@@ -182,6 +182,10 @@ def tohttpmsg(start_line, headers, body=b""):
 
     _headers = []
     for key, value in headers.items():
+        if isinstance(key, bytes):
+            key = key.decode()
+        if isinstance(value, bytes):
+            value = value.decode()
         _headers.append("{}: {}".format(key, value).encode())
 
     # Empty libe
@@ -194,4 +198,4 @@ def tohttpmsg(start_line, headers, body=b""):
     if not isinstance(body, bytes):
         raise TypeError("expected bytes or str")
 
-    return b"\r\n".join([start_line, *_headers, empty_line, body])
+    return b"\r\n".join([startline, *_headers, empty_line, body])
