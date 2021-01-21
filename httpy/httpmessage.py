@@ -5,6 +5,7 @@
 
 
 import abc
+from json import loads
 
 
 class HTTPMessage:
@@ -70,6 +71,13 @@ class HTTPMessage:
 
         self.__body = _body
 
+    def json(self):
+        """ Returns the json-encoded content of a HTTP Message, if any
+
+        """
+
+        return loads(self.__body.replace(b"'", b'"'))
+
     @abc.abstractproperty
     def startline(self):
         """ abstract property
@@ -131,6 +139,7 @@ class Response(HTTPMessage):
 
         """
         self.version, self.statuscode, self.statusmessage = startline
+        self.statuscode = int(self.statuscode)
 
     def __repr__(self):
         return "<Response [{}]>".format(self.statuscode)
