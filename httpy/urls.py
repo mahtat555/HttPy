@@ -28,3 +28,25 @@ def pathsplit(path):
         path, query = path.split('?', 1)
 
     return Path(path=path, query=query, signet=signet)
+
+
+def pathjoin(path, query="", signet=""):
+    """Combining path components into a path string.
+
+    """
+    if isinstance(path, bytes):
+        path = path.decode()
+
+    if isinstance(query, bytes):
+        query = query.decode()
+
+    if isinstance(signet, bytes):
+        signet = signet.decode()
+
+    if query:
+        path += "?" + query
+
+    if signet:
+        path += "#" + signet
+
+    return path
