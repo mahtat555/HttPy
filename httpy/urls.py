@@ -50,3 +50,32 @@ def pathjoin(path, query="", signet=""):
         path += "#" + signet
 
     return path
+
+
+def query2dict(query):
+    """Convert a query from string into Python dict.
+
+    """
+
+    query = query.split("&")
+    _dict = {}
+    for pair in query:
+        key, value = pair.split("=", 1)
+        _dict[key] = value
+
+    return _dict
+
+
+def dict2query(_dict):
+    """Convert a query from Python dict into string.
+
+    """
+    query = []
+
+    if not isinstance(_dict, dict):
+        raise TypeError("expected dict")
+
+    for key, value in _dict.items():
+        query.append("{}={}".format(key, value))
+
+    return "&".join(query)
