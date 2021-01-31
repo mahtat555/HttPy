@@ -2,7 +2,9 @@
 
 """
 
+
 from collections import namedtuple
+import re
 
 
 # These characters are always safe (not change) during the encoding process.
@@ -20,6 +22,10 @@ HEX_BYTE = dict(
     ((x + y).encode(), bytes.fromhex(x + y))
     for x in HEX_DIGITS for y in HEX_DIGITS
 )
+
+
+SACII_REGEX = re.compile(r"([\x00-\x7f]+)")
+
 
 # Structured result objects
 Path = namedtuple("Path", ("path", "query", "signet"))
@@ -136,3 +142,40 @@ def _urlencode(data, safe=b""):
             _data += "%{0:02X}".format(byte)
 
     return _data.replace(" ", "+")
+
+
+def urldecode(string, plus=False, encoding='utf-8', errors='replace'):
+    """ The purpose of this function is to decode a URL.
+
+    """
+
+    # for decoding the content of an HTTP request
+    if plus:
+        string = string.replace("+", " ")
+
+    data = SACII_REGEX.split(string)
+    encode = [data[0]]
+
+    for i in range(1, len(data), 2):
+        encode.append(_urldecode(data[i]).decode(encoding, errors))
+        encode.append(data[i + i])
+
+    return "".join(encode)
+
+
+def _urldecode(data):
+
+    if isinstance(data, str):
+        data = data.encode()
+
+    data = data.split(b"%")
+    result = [data[0]]
+
+    for byte in data[1:]:
+        try:
+            char = HEX_BYTE[byte[:2]] + byte[2:]
+        except KeyError:
+            char = b"%" + byte
+        result.append(char)
+
+    return b"".join(result)
