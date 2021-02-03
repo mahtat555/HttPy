@@ -27,15 +27,62 @@ HEX_BYTE = dict(
 SACII_REGEX = re.compile(r"([\x00-\x7f]+)")
 
 
-# Structured result objects
+# Structured result objects.
+
+# This class represents the different elements of a Path.
 Path = namedtuple("Path", ("path", "query", "signet"))
 
+# This class represents the different elements of a URL.
+URL = namedtuple("URL", ("protocol", "auth", "host", "path"))
 
-class URL:
-    """ URL class
-    This class represents the different elements of a URL.
+
+class URLError(Exception):
+    """ URLError class
+
+    This class is used to handle exceptions in the `URL` class.
 
     """
+
+
+def urlsplit(url):
+    """ Parse a URL into its components.
+
+    """
+    # protocol
+    try:
+        protocol, access_path = url.split("://", 1)
+    except ValueError:
+        raise URLError("Invalid URL")
+
+    # path
+    if "/" in access_path:
+        machine, path = access_path.split("/", 1)
+    else:
+        machine, path = access_path, ""
+
+    path = "/" + path
+
+    # auth = (user, password)
+    if "@" in machine:
+        auth, host = machine.split("@", 1)
+        auth = tuple(auth.split(":"))
+    else:
+        host = machine
+        auth = None
+
+    # host = (domain, port)
+    domain = host
+    if ":" in host:
+        domain, port = host.split(":", 1)
+        port = int(port)
+    elif protocol == "http":
+        port = 80
+    elif protocol == "https":
+        port = 443
+
+    host = (domain, port)
+
+    return URL(protocol, auth, host, path)
 
 
 def pathsplit(path):
