@@ -27,12 +27,12 @@ class HTTPMessage:
         """
         return tohttpmsg(self.startline, self.headers, self.body)
 
-    def fromstr(self, reader):
+    async def fromstr(self, reader):
         """ This function converts an HTTP message encoded in ASCII
         into a Python object.
 
         """
-        self.startline, self.headers, self.body = fromreader(reader)
+        self.startline, self.headers, self.body = await fromreader(reader)
 
     @property
     def headers(self):
@@ -139,7 +139,7 @@ class Response(HTTPMessage):
 
         """
         self.version, self.statuscode, self.statusmessage = startline
-        self.statuscode = int(self.statuscode)
+        #self.statuscode = int(self.statuscode)
 
     def __repr__(self):
         return "<Response [{}]>".format(self.statuscode)

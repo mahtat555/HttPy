@@ -5,9 +5,11 @@ valid request to an HTTP server and receive a valid response from it.
 
 """
 
+import asyncio
 import ssl
 
 from .urls import urlsplit
+from .httpmessage import Request, Response
 
 
 class HTTPClient:
@@ -20,15 +22,33 @@ class HTTPClient:
 
     VERSION = "HTTP/1.1"
 
-    def __init__(self, method="GET", url=None, headers=None, body=None):
+    def __init__(self, method, url, headers=None, body=None):
         # split the URL into (protocol, auth, host, path)
         self.url = urlsplit(url)
 
         # Used SSL in the HTTPS protocol
         self.ssl_context = None
         # host = (domain, port)
-        if self.url.host[1] == 443:
+        host, port = self.url.host
+        if port == 443:
             self.ssl_context = ssl.SSLContext()
+
+        # Prepare the request
+        # headers
+        if headers is None:
+            headers = {}
+        if "Connection" not in headers:
+            headers["Connection"] = "close"
+        if "Host" not in headers:
+            headers["Host"] = host
+            if port not in (80, 443):
+                headers["Host"] += ": " + str(port)
+        # body
+        if body is None:
+            body = b""
+        # create the request
+        self.request = Request(
+            method, self.url.path, self.VERSION, headers, body)
 
     async def connection(self):
         """ Create a connection to the HTTP server.
@@ -36,3 +56,17 @@ class HTTPClient:
         """
         self.reader, self.writer = await asyncio.open_connection(
             *self.url.host, ssl=self.ssl_context)
+
+    async def send(self):
+        """ Send an HTTP Request to an HTTP server
+
+        """
+        self.writer.write(self.request.tostr())
+
+    async def recv(self):
+        """ Receive a response from an HTTP server.
+
+        """
+        response = Response()
+        await response.fromstr(self.reader)
+        return response
