@@ -5,7 +5,9 @@ valid request to an HTTP server and receive a valid response from it.
 
 """
 
-from urls import urlsplit
+import ssl
+
+from .urls import urlsplit
 
 
 class HTTPClient:
@@ -16,5 +18,21 @@ class HTTPClient:
 
     """
 
-    def __init__(self, url=None):
-        self.url = url, urlsplit(url)
+    VERSION = "HTTP/1.1"
+
+    def __init__(self, method="GET", url=None, headers=None, body=None):
+        # split the URL into (protocol, auth, host, path)
+        self.url = urlsplit(url)
+
+        # Used SSL in the HTTPS protocol
+        self.ssl_context = None
+        # host = (domain, port)
+        if self.url.host[1] == 443:
+            self.ssl_context = ssl.SSLContext()
+
+    async def connection(self):
+        """ Create a connection to the HTTP server.
+
+        """
+        self.reader, self.writer = await asyncio.open_connection(
+            *self.url.host, ssl=self.ssl_context)

@@ -33,7 +33,7 @@ SACII_REGEX = re.compile(r"([\x00-\x7f]+)")
 Path = namedtuple("Path", ("path", "query", "signet"))
 
 # This class represents the different elements of a URL.
-URL = namedtuple("URL", ("protocol", "auth", "host", "path"))
+URL = namedtuple("URL", ("str", "protocol", "auth", "host", "path"))
 
 
 class URLError(Exception):
@@ -82,7 +82,7 @@ def urlsplit(url):
 
     host = (domain, port)
 
-    return URL(protocol, auth, host, path)
+    return URL(url, protocol, auth, host, path)
 
 
 def pathsplit(path):
