@@ -69,4 +69,25 @@ class HTTPClient:
         """
         response = Response()
         await response.fromstr(self.reader)
+        self.writer.close()
         return response
+
+    async def fit(self):
+        """ Send request and Receive response
+
+        """
+        # Create the connection to the server
+        await self.connection()
+        # Send the request
+        await self.send()
+        # Recv the response
+        return await self.recv()
+
+    def fitch(self):
+        """ Send request and Receive response
+        """
+        loop = asyncio.get_event_loop()
+        try:
+            return loop.run_until_complete(self.fit())
+        finally:
+            loop.close()

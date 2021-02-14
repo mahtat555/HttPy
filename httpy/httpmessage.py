@@ -139,7 +139,15 @@ class Response(HTTPMessage):
 
         """
         self.version, self.statuscode, self.statusmessage = startline
-        #self.statuscode = int(self.statuscode)
+        # convert the `statuscode` to int
+        if self.statuscode:
+            self.statuscode = int(self.statuscode)
+        # convert the `statusmessage` to str
+        if isinstance(self.statusmessage, bytes):
+            self.statusmessage = self.statusmessage.decode()
+        # convert the `version` to str
+        if isinstance(self.version, bytes):
+            self.version = self.version.decode()
 
     def __repr__(self):
         return "<Response [{}]>".format(self.statuscode)
@@ -152,7 +160,7 @@ async def fromreader(reader):
     """
     # Start line
     line = await reader.readline()
-    startline = line.split(maxsplit=2)
+    startline = line.rstrip().split(maxsplit=2)
 
     # Headers
     headers = {}
@@ -161,6 +169,12 @@ async def fromreader(reader):
         if not line:
             break
         key, value = line.split(b":", 1)
+        # convert the `key` to str
+        if isinstance(key, bytes):
+            key = key.decode()
+        # convert the `value` to str
+        if isinstance(value, bytes):
+            value = value.decode()
         headers[key] = value.strip()
 
     # Body
