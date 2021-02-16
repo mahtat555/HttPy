@@ -21,3 +21,12 @@ class ProtocolError(URLError):
     if the protocol, used by the user, is not valid.
 
     """
+
+
+class MethodError(URLError):
+    """ MethodError class
+
+    This class is used to handle exceptions in the `URL` class. Is raised
+    if the method name, used by the user, is not valid.
+
+    """

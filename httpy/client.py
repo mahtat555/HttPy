@@ -10,13 +10,13 @@ import ssl
 
 from .urls import urlsplit
 from .httpmessage import Request, Response
-from .errors import ProtocolError
+from .errors import ProtocolError, MethodError
 
 
 class HTTPClient:
     """ HTTPClient class
 
-    This category allows us to send a request to and receive a
+    This class allows us to send a request to and receive a
     response from an HTTP server.
 
     """
@@ -28,6 +28,7 @@ class HTTPClient:
     loop = asyncio.get_event_loop()
 
     # methodes
+    METHODES = ["GET", "POST", "PUT", "DELETE", "HEAD"]
 
     # protocols
     PROTOCOLS = ["http", "https"]
@@ -35,6 +36,11 @@ class HTTPClient:
     def __init__(self, method, url, headers=None, body=None):
         # split the URL into (protocol, auth, host, path)
         self.url = urlsplit(url)
+
+        # method
+        if method not in self.METHODES:
+            raise MethodError("Invalid Method Name !!")
+
 
         # protocol
         if self.url.protocol not in self.PROTOCOLS:
@@ -57,9 +63,13 @@ class HTTPClient:
             headers["Host"] = host
             if port not in (80, 443):
                 headers["Host"] += ": " + str(port)
+
+        # Notify the server that it will receive JSON.
+
         # body
         if body is None:
             body = b""
+
         # create the request
         self.request = Request(
             method, self.url.path, self.VERSION, headers, body)
@@ -114,3 +124,53 @@ class HTTPClient:
 
         """
         self.loop.close()
+
+
+
+def __method(method, url, **kwargs):
+    """ Send a request to a server, with a given method,
+    and receive a response from it.
+
+    """
+    request = HTTPClient(method, url, **kwargs)
+    return request.fetch()
+
+
+def get(url, **kwargs):
+    """ Send an HTTP request of type GET to an HTTP server, and receive
+    an HTTP response from it.
+
+    """
+    return __method("GET", url, **kwargs)
+
+
+def post(url, **kwargs):
+    """ Send an HTTP request of type POST to an HTTP server, and receive
+    an HTTP response from it.
+
+    """
+    return __method("POST", url, **kwargs)
+
+
+def put(url, **kwargs):
+    """ Send an HTTP request of type PUT to an HTTP server, and receive
+    an HTTP response from it.
+
+    """
+    return __method("PUT", url, **kwargs)
+
+
+def delete(url, **kwargs):
+    """ Send an HTTP request of type DELETE to an HTTP server, and receive
+    an HTTP response from it.
+
+    """
+    return __method("DELETE", url, **kwargs)
+
+
+def head(url, **kwargs):
+    """ Send an HTTP request of type HEAD to an HTTP server, and receive
+    an HTTP response from it.
+
+    """
+    return __method("HEAD", url, **kwargs)
