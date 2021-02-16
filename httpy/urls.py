@@ -7,6 +7,9 @@ from collections import namedtuple
 import re
 
 
+from .errors import URLError
+
+
 # These characters are always safe (not change) during the encoding process.
 ALWAYS_SAFE = (
     b'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -36,14 +39,6 @@ Path = namedtuple("Path", ("path", "query", "signet"))
 URL = namedtuple("URL", ("str", "protocol", "auth", "host", "path"))
 
 
-class URLError(Exception):
-    """ URLError class
-
-    This class is used to handle exceptions in the `URL` class.
-
-    """
-
-
 def urlsplit(url):
     """ Parse a URL into its components.
 
@@ -51,6 +46,7 @@ def urlsplit(url):
     # protocol
     try:
         protocol, access_path = url.split("://", 1)
+        protocol = protocol.lower()
     except ValueError:
         raise URLError("Invalid URL")
 
@@ -71,7 +67,7 @@ def urlsplit(url):
         auth = None
 
     # host = (domain, port)
-    domain = host
+    domain, port = host, None
     if ":" in host:
         domain, port = host.split(":", 1)
         port = int(port)

@@ -10,6 +10,7 @@ import ssl
 
 from .urls import urlsplit
 from .httpmessage import Request, Response
+from .errors import ProtocolError
 
 
 class HTTPClient:
@@ -20,11 +21,24 @@ class HTTPClient:
 
     """
 
+    # The version of our HTTP client
     VERSION = "HTTP/1.1"
+
+    # We will use it to fetch (run) our requests
+    loop = asyncio.get_event_loop()
+
+    # methodes
+
+    # protocols
+    PROTOCOLS = ["http", "https"]
 
     def __init__(self, method, url, headers=None, body=None):
         # split the URL into (protocol, auth, host, path)
         self.url = urlsplit(url)
+
+        # protocol
+        if self.url.protocol not in self.PROTOCOLS:
+            raise ProtocolError("Invalid Protocol !!")
 
         # Used SSL in the HTTPS protocol
         self.ssl_context = None
@@ -72,7 +86,7 @@ class HTTPClient:
         self.writer.close()
         return response
 
-    async def fit(self):
+    async def call(self):
         """ Send request and Receive response
 
         """
@@ -83,11 +97,20 @@ class HTTPClient:
         # Recv the response
         return await self.recv()
 
-    def fitch(self):
+    def fetch(self):
         """ Send request and Receive response
+
         """
-        loop = asyncio.get_event_loop()
-        try:
-            return loop.run_until_complete(self.fit())
-        finally:
-            loop.close()
+        return self.run(self.call())
+
+    def run(self, function):
+        """ Run a function create with the async/await keywords.
+
+        """
+        return self.loop.run_until_complete(function)
+
+    def close(self):
+        """ Close the event loop.
+
+        """
+        self.loop.close()
