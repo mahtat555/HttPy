@@ -30,12 +30,6 @@ HEX_BYTE = dict(
 SACII_REGEX = re.compile(r"([\x00-\x7f]+)")
 
 
-# Structured result objects.
-
-# This class represents the different elements of a Path.
-Path = namedtuple("Path", ("path", "query", "signet"))
-
-
 class URL:
     """ URL class
 
@@ -44,96 +38,106 @@ class URL:
 
     """
 
-    def __init__(self, url):
+    def __init__(self, url, params=None):
         # Encode the URL
         url = urlencode(url)
+        self.url = url
 
         # Split the URL into (protocol, auth, host, path)
-        self.protocol, self.auth, self.host, self.path = urlsplit(url)
+        self.urlsplit(url)
 
-    def __reper__(self):
-        return type(self).__name__ + "({})".format(", ".join(
-            ["{}={}".format(k, repr(v)) for k, v in self.__dict__.items()]
-        ))
+        # Add the parameters (query string) to the path
+        if params:
+            # split the path into (path, query, signet)
+            path, query, signet = self.pathsplit()
 
+            # Convert the query (params) from dict into str.
+            if isinstance(params, dict):
+                params = dict2query(params)
 
-def urlsplit(url):
-    """ Parse a URL into its components.
+            # Encode the query string (params)
+            params = urlencode(params.encode())
+            query += "&" + params
+            self.pathjoin(path, query, signet)
 
-    """
-    # protocol
-    try:
-        protocol, access_path = url.split("://", 1)
-        protocol = protocol.lower()
-    except ValueError:
-        raise URLError("Invalid URL")
+    def urlsplit(self, url):
+        """ Parse a URL into its components.
 
-    # path
-    if "/" in access_path:
-        machine, path = access_path.split("/", 1)
-    else:
-        machine, path = access_path, ""
+        """
+        # protocol
+        try:
+            protocol, access_path = url.split("://", 1)
+            protocol = protocol.lower()
+        except ValueError:
+            raise URLError("Invalid URL")
+        self.protocol = protocol
 
-    path = "/" + path
+        # path
+        if "/" in access_path:
+            machine, path = access_path.split("/", 1)
+        else:
+            machine, path = access_path, ""
+        self.path = "/" + path
 
-    # auth = (user, password)
-    if "@" in machine:
-        auth, host = machine.split("@", 1)
-        auth = tuple(auth.split(":"))
-    else:
-        host = machine
-        auth = None
+        # auth = (user, password)
+        if "@" in machine:
+            auth, host = machine.split("@", 1)
+            auth = tuple(auth.split(":"))
+        else:
+            host, auth = machine, None
+        self.auth = auth
 
-    # host = (domain, port)
-    domain, port = host, None
-    if ":" in host:
-        domain, port = host.split(":", 1)
-        port = int(port)
-    elif protocol == "http":
-        port = 80
-    elif protocol == "https":
-        port = 443
+        # host = (domain, port)
+        domain, port = host, None
+        if ":" in host:
+            domain, port = host.split(":", 1)
+            port = int(port)
+        elif protocol == "http":
+            port = 80
+        elif protocol == "https":
+            port = 443
 
-    host = (domain, port)
+        self.host = (domain, port)
 
-    return protocol, auth, host, path
+    def pathsplit(self):
+        """ Parse a Path into its components.
 
+        """
+        signet = ""
+        if "#" in self.path:
+            path, signet = self.path.split('#', 1)
 
-def pathsplit(path):
-    """ Parse a Path into its components.
+        query = ""
+        if "?" in self.path:
+            path, query = self.path.split('?', 1)
 
-    """
-    signet = ""
-    if "#" in path:
-        path, signet = path.split('#', 1)
+        return path, query, signet
 
-    query = ""
-    if "?" in path:
-        path, query = path.split('?', 1)
+    def pathjoin(self, path, query="", signet=""):
+        """Combining path components into a path string.
 
-    return Path(path=path, query=query, signet=signet)
+        """
+        if isinstance(path, bytes):
+            path = path.decode()
 
+        if isinstance(query, bytes):
+            query = query.decode()
 
-def pathjoin(path, query="", signet=""):
-    """Combining path components into a path string.
+        if isinstance(signet, bytes):
+            signet = signet.decode()
 
-    """
-    if isinstance(path, bytes):
-        path = path.decode()
+        if query:
+            path += "?" + query
 
-    if isinstance(query, bytes):
-        query = query.decode()
+        if signet:
+            path += "#" + signet
 
-    if isinstance(signet, bytes):
-        signet = signet.decode()
+        self.path = path
 
-    if query:
-        path += "?" + query
-
-    if signet:
-        path += "#" + signet
-
-    return path
+    def __repr__(self):
+        return "URL(protocol={}, auth={}, host={}, path={})".format(
+            *map(repr, [self.protocol, self.auth, self.host, self.path])
+        )
 
 
 def query2dict(query):

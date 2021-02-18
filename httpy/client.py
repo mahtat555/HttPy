@@ -33,9 +33,9 @@ class HTTPClient:
     # protocols
     PROTOCOLS = ["http", "https"]
 
-    def __init__(self, method, url, headers=None, body=None):
+    def __init__(self, method, url, params=None, headers=None, body=None):
         # URL
-        self.url = URL(url)
+        self.url = URL(url, params)
 
         # method
         if method not in self.METHODES:
