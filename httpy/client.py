@@ -8,7 +8,7 @@ valid request to an HTTP server and receive a valid response from it.
 import asyncio
 import ssl
 
-from .urls import urlsplit
+from .urls import URL
 from .httpmessage import Request, Response
 from .errors import ProtocolError, MethodError
 
@@ -34,13 +34,12 @@ class HTTPClient:
     PROTOCOLS = ["http", "https"]
 
     def __init__(self, method, url, headers=None, body=None):
-        # split the URL into (protocol, auth, host, path)
-        self.url = urlsplit(url)
+        # URL
+        self.url = URL(url)
 
         # method
         if method not in self.METHODES:
             raise MethodError("Invalid Method Name !!")
-
 
         # protocol
         if self.url.protocol not in self.PROTOCOLS:
@@ -124,7 +123,6 @@ class HTTPClient:
 
         """
         self.loop.close()
-
 
 
 def __method(method, url, **kwargs):

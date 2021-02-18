@@ -35,8 +35,26 @@ SACII_REGEX = re.compile(r"([\x00-\x7f]+)")
 # This class represents the different elements of a Path.
 Path = namedtuple("Path", ("path", "query", "signet"))
 
-# This class represents the different elements of a URL.
-URL = namedtuple("URL", ("str", "protocol", "auth", "host", "path"))
+
+class URL:
+    """ URL class
+
+    This class represents the different elements of a URL, and some the
+    methods used for manipulate these elements.
+
+    """
+
+    def __init__(self, url):
+        # Encode the URL
+        url = urlencode(url)
+
+        # Split the URL into (protocol, auth, host, path)
+        self.protocol, self.auth, self.host, self.path = urlsplit(url)
+
+    def __reper__(self):
+        return type(self).__name__ + "({})".format(", ".join(
+            ["{}={}".format(k, repr(v)) for k, v in self.__dict__.items()]
+        ))
 
 
 def urlsplit(url):
@@ -78,7 +96,7 @@ def urlsplit(url):
 
     host = (domain, port)
 
-    return URL(url, protocol, auth, host, path)
+    return protocol, auth, host, path
 
 
 def pathsplit(path):
