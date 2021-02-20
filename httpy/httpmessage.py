@@ -46,10 +46,12 @@ class HTTPMessage:
         """ Define the headers of an HTTP message.
 
         """
-        if not isinstance(_headers, dict) and _headers:
+        if _headers is None:
+            _headers = {}
+        if not isinstance(_headers, dict):
             raise TypeError("expected dict")
 
-        self.__headers = _headers
+        self.__headers = Headers(_headers)
 
     @property
     def body(self):
@@ -151,6 +153,48 @@ class Response(HTTPMessage):
 
     def __repr__(self):
         return "<Response [{}]>".format(self.statuscode)
+
+
+class Headers(dict):
+    """ Headers class
+    This class is used to represent the different headers of a request.
+
+    """
+
+    def update(self, key, value):
+        """ Update one of the headers.
+
+        """
+        super().__setitem__(key, value)
+
+    def add(self, key, value):
+        """ Add a header into the headers.
+
+        """
+        if key in self:
+            raise KeyError(f"this key '{key}' already exists")
+        else:
+            super().__setitem__(key, value)
+
+    def addConnection(self, value):
+        """ Add the Connection to the headers
+
+        """
+        self.add("Connection", value)
+
+
+    def addHost(self, domain, port):
+        """ Add the Host to the headers
+
+        """
+        host = str(domain)
+        if port not in [80, 443]:
+            host += ":" + str(port)
+
+        self.add("Host", host)
+
+    def __setitem__(self, key, value):
+        raise TypeError("'Headers' object does not support item assignment")
 
 
 async def fromreader(reader):

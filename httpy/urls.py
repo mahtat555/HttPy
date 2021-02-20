@@ -57,7 +57,9 @@ class URL:
 
             # Encode the query string (params)
             params = urlencode(params.encode())
-            query += "&" + params
+            if query:
+                query += "&"
+            query += params
             self.pathjoin(path, query, signet)
 
     def urlsplit(self, url):
@@ -105,13 +107,13 @@ class URL:
         """
         signet = ""
         if "#" in self.path:
-            path, signet = self.path.split('#', 1)
+            self.path, signet = self.path.split('#', 1)
 
         query = ""
         if "?" in self.path:
-            path, query = self.path.split('?', 1)
+            self.path, query = self.path.split('?', 1)
 
-        return path, query, signet
+        return self.path, query, signet
 
     def pathjoin(self, path, query="", signet=""):
         """Combining path components into a path string.

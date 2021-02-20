@@ -34,44 +34,46 @@ class HTTPClient:
     PROTOCOLS = ["http", "https"]
 
     def __init__(self, method, url, params=None, headers=None, body=None):
-        # URL
+
         self.url = URL(url, params)
 
-        # method
+        # Check if the method name given by the user is valid.
         if method not in self.METHODES:
             raise MethodError("Invalid Method Name !!")
 
-        # protocol
+        # Check if the protocol given by the user is valid.
         if self.url.protocol not in self.PROTOCOLS:
             raise ProtocolError("Invalid Protocol !!")
 
         # Used SSL in the HTTPS protocol
-        self.ssl_context = None
-        # host = (domain, port)
-        host, port = self.url.host
-        if port == 443:
-            self.ssl_context = ssl.SSLContext()
+        self.ssl()
 
-        # Prepare the request
-        # headers
-        if headers is None:
-            headers = {}
-        if "Connection" not in headers:
-            headers["Connection"] = "close"
-        if "Host" not in headers:
-            headers["Host"] = host
-            if port not in (80, 443):
-                headers["Host"] += ": " + str(port)
+        # create the request
+        self.request = Request(
+            method, self.url.path, self.VERSION, {}, b"")
+
+        # Define the headers of the request:
+        headers = self.request.headers
+
+        # add the Connection to the headers
+        headers.addConnection("close")
+
+        # add the Host to the headers
+        headers.addHost(*self.url.host)
 
         # Notify the server that it will receive JSON.
 
         # body
-        if body is None:
-            body = b""
+        if body:
+            self.request.body = body
 
-        # create the request
-        self.request = Request(
-            method, self.url.path, self.VERSION, headers, body)
+    def ssl(self):
+        """ Create a new SSL context. for using it in the HTTPS protocol.
+
+        """
+        self.ssl_context = None
+        if self.url.protocol == "https":
+            self.ssl_context = ssl.SSLContext()
 
     async def connection(self):
         """ Create a connection to the HTTP server.

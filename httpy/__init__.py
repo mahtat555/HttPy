@@ -2,7 +2,7 @@
 """
 
 from .status_codes import HTTPStatusCodes
-from .client import HTTPClient
+from .client import HTTPClient, get, post, put, delete, head
 
 
 # Author info
@@ -19,5 +19,6 @@ __version__ = "0.0.1"
 # List of public objects in this package
 __all__ = [
     "__email__", "__author__", "__title__", "__url__", "__license__",
-    "__date__", "__version__", "HTTPStatusCodes", "HTTPClient"
+    "__date__", "__version__", "HTTPStatusCodes", "HTTPClient", "get",
+    "post", "put", "head"
 ]
