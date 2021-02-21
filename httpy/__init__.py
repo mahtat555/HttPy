@@ -18,7 +18,10 @@ __version__ = "0.0.1"
 
 # List of public objects in this package
 __all__ = [
+    # project info and author info
     "__email__", "__author__", "__title__", "__url__", "__license__",
-    "__date__", "__version__", "HTTPStatusCodes", "HTTPClient", "get",
-    "post", "put", "head"
+    "__date__", "__version__",
+
+    # Classes and functions
+    "HTTPStatusCodes", "HTTPClient", "get", "post", "put", "head"
 ]

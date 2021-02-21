@@ -7,8 +7,9 @@ valid request to an HTTP server and receive a valid response from it.
 
 import asyncio
 import ssl
+from json import dumps
 
-from .urls import URL
+from .urls import URL, dict2query
 from .httpmessage import Request, Response
 from .errors import ProtocolError, MethodError
 
@@ -33,7 +34,8 @@ class HTTPClient:
     # protocols
     PROTOCOLS = ["http", "https"]
 
-    def __init__(self, method, url, params=None, headers=None, body=None):
+    def __init__(self, method, url, params=None, headers=None, data=None,
+                 json=None):
 
         self.url = URL(url, params)
 
@@ -55,17 +57,29 @@ class HTTPClient:
         # Define the headers of the request:
         headers = self.request.headers
 
-        # add the Connection to the headers
-        headers.addConnection("close")
-
         # add the Host to the headers
         headers.addHost(*self.url.host)
 
-        # Notify the server that it will receive JSON.
+        # add the Connection to the headers
+        headers.addConnection("close")
 
-        # body
-        if body:
-            self.request.body = body
+        # Define the content of the request:
+        if json and not data:
+            # Notify the server that it will receive JSON.
+            headers.addContentType("application/json")
+            if not isinstance(json, (str, bytes)):
+                json = dumps(json)
+            self.request.body = json
+
+        if data:
+            # Notify the server that it will receive data from a form.
+            headers.addContentType("application/x-www-form-urlencoded")
+            if not isinstance(data, (str, bytes)):
+                data = dict2query(data, plus=True)
+            self.request.body = data
+
+        # add the HTTP message content length to the headers
+        headers.addContentLength(len(self.request.body))
 
     def ssl(self):
         """ Create a new SSL context. for using it in the HTTPS protocol.

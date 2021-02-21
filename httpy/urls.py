@@ -55,8 +55,6 @@ class URL:
             if isinstance(params, dict):
                 params = dict2query(params)
 
-            # Encode the query string (params)
-            params = urlencode(params.encode())
             if query:
                 query += "&"
             query += params
@@ -156,7 +154,7 @@ def query2dict(query):
     return _dict
 
 
-def dict2query(_dict):
+def dict2query(_dict, safe=b"", plus=False):
     """Convert a query from Python dict into string.
 
     """
@@ -166,9 +164,18 @@ def dict2query(_dict):
         raise TypeError("expected dict")
 
     for key, value in _dict.items():
+        key = str(key)
+        value = str(value)
+        if plus:
+            key = urlencode(key, safe=safe, plus=True)
+            value = urlencode(value, safe=safe, plus=True)
         query.append("{}={}".format(key, value))
 
-    return "&".join(query)
+    # Encode the query string (params)
+    query = "&".join(query)
+    if not plus:
+        query = urlencode(query, safe=safe, plus=False)
+    return query
 
 
 def urlencode(data, safe=b"", plus=False):

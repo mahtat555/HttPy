@@ -177,14 +177,13 @@ class Headers(dict):
             super().__setitem__(key, value)
 
     def addConnection(self, value):
-        """ Add the Connection to the headers
+        """ Add the Connection to the headers.
 
         """
         self.add("Connection", value)
 
-
     def addHost(self, domain, port):
-        """ Add the Host to the headers
+        """ Add the Host to the headers.
 
         """
         host = str(domain)
@@ -192,6 +191,18 @@ class Headers(dict):
             host += ":" + str(port)
 
         self.add("Host", host)
+
+    def addContentType(self, value):
+        """ Add the content type to the headers.
+
+        """
+        self.add("Content-Type", value)
+
+    def addContentLength(self, length):
+        """ Add the content length to the headers.
+
+        """
+        self.add("Content-Length", length)
 
     def __setitem__(self, key, value):
         raise TypeError("'Headers' object does not support item assignment")
