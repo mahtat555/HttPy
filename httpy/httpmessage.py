@@ -6,6 +6,7 @@
 
 import abc
 from json import loads
+from base64 import b64encode
 
 
 class HTTPMessage:
@@ -176,13 +177,13 @@ class Headers(dict):
         else:
             super().__setitem__(key, value)
 
-    def addConnection(self, value):
+    def connection(self, value, replace=False):
         """ Add the Connection to the headers.
 
         """
         self.add("Connection", value)
 
-    def addHost(self, domain, port):
+    def host(self, domain, port, replace=False):
         """ Add the Host to the headers.
 
         """
@@ -192,17 +193,34 @@ class Headers(dict):
 
         self.add("Host", host)
 
-    def addContentType(self, value):
+    def contentType(self, value):
         """ Add the content type to the headers.
 
         """
         self.add("Content-Type", value)
 
-    def addContentLength(self, length):
+    def contentLength(self, length):
         """ Add the content length to the headers.
 
         """
         self.add("Content-Length", length)
+
+    def auth(self, auth):
+        """ Add the `Authorization` header to the headers.
+
+        """
+        user, password = auth
+        if isinstance(user, bytes):
+            user = user.decode()
+
+        if isinstance(password, bytes):
+            password = password.decode()
+
+        authorization = "{}:{}".format(user, password)
+        authorization = b64encode(authorization.encode())
+        authorization = "Basic " + authorization.decode()
+
+        self.add("Authorization", authorization)
 
     def __setitem__(self, key, value):
         raise TypeError("'Headers' object does not support item assignment")

@@ -35,7 +35,7 @@ class HTTPClient:
     PROTOCOLS = ["http", "https"]
 
     def __init__(self, method, url, params=None, headers=None, data=None,
-                 json=None):
+                 json=None, auth=None):
 
         self.url = URL(url, params)
 
@@ -58,28 +58,35 @@ class HTTPClient:
         headers = self.request.headers
 
         # add the Host to the headers
-        headers.addHost(*self.url.host)
+        headers.host(*self.url.host)
 
         # add the Connection to the headers
-        headers.addConnection("close")
+        headers.connection("close")
 
         # Define the content of the request:
         if json and not data:
             # Notify the server that it will receive JSON.
-            headers.addContentType("application/json")
+            headers.contentType("application/json")
             if not isinstance(json, (str, bytes)):
                 json = dumps(json)
             self.request.body = json
 
         if data:
             # Notify the server that it will receive data from a form.
-            headers.addContentType("application/x-www-form-urlencoded")
+            headers.contentType("application/x-www-form-urlencoded")
             if not isinstance(data, (str, bytes)):
                 data = dict2query(data, plus=True)
             self.request.body = data
 
         # add the HTTP message content length to the headers
-        headers.addContentLength(len(self.request.body))
+        headers.contentLength(len(self.request.body))
+
+        # Authentication
+        if auth is None:
+            auth = self.url.auth
+        # Add the Authorization
+        if auth:
+            headers.auth(auth)
 
     def ssl(self):
         """ Create a new SSL context. for using it in the HTTPS protocol.
