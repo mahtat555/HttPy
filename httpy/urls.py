@@ -2,8 +2,6 @@
 
 """
 
-
-from collections import namedtuple
 import re
 
 

@@ -1,7 +1,9 @@
 """ client module
 
-In this module, we will create the `HTTPClient` class which allows us to send a
-valid request to an HTTP server and receive a valid response from it.
+In this module, we will create the `AsyncRequest` class which allows us to
+send a valid request to an HTTP server and receive a valid response
+from it asynchronously. And the `HttpRequest` class that has the same
+functionality  synchronously
 
 """
 
@@ -14,19 +16,16 @@ from .httpmessage import Request, Response
 from .errors import ProtocolError, MethodError
 
 
-class HTTPClient:
-    """ HTTPClient class
+class AsyncRequest:
+    """ AsyncRequest class
 
     This class allows us to send a request to and receive a
-    response from an HTTP server.
+    response from an HTTP server asynchronously.
 
     """
 
     # The version of our HTTP client
     VERSION = "HTTP/1.1"
-
-    # We will use it to fetch (run) our requests
-    loop = asyncio.get_event_loop()
 
     # methodes
     METHODES = ["GET", "POST", "PUT", "DELETE", "HEAD"]
@@ -37,6 +36,11 @@ class HTTPClient:
     def __init__(self, method, url, params=None, headers=None, data=None,
                  json=None, auth=None):
 
+        # initialize our streams objects by `None`
+        self.reader, self.writer = None, None
+
+        # We use the `URL` class to represents the different
+        # elements of this URL.
         self.url = URL(url, params)
 
         # Check if the method name given by the user is valid.
@@ -46,9 +50,6 @@ class HTTPClient:
         # Check if the protocol given by the user is valid.
         if self.url.protocol not in self.PROTOCOLS:
             raise ProtocolError("Invalid Protocol !!")
-
-        # Used SSL in the HTTPS protocol
-        self.ssl()
 
         # create the request
         self.request = Request(
@@ -66,20 +67,20 @@ class HTTPClient:
         # Define the content of the request:
         if json and not data:
             # Notify the server that it will receive JSON.
-            headers.contentType("application/json")
+            headers.content_type("application/json")
             if not isinstance(json, (str, bytes)):
                 json = dumps(json)
             self.request.body = json
 
         if data:
             # Notify the server that it will receive data from a form.
-            headers.contentType("application/x-www-form-urlencoded")
+            headers.content_type("application/x-www-form-urlencoded")
             if not isinstance(data, (str, bytes)):
                 data = dict2query(data, plus=True)
             self.request.body = data
 
         # add the HTTP message content length to the headers
-        headers.contentLength(len(self.request.body))
+        headers.content_length(len(self.request.body))
 
         # Authentication
         if auth is None:
@@ -88,20 +89,17 @@ class HTTPClient:
         if auth:
             headers.auth(auth)
 
-    def ssl(self):
-        """ Create a new SSL context. for using it in the HTTPS protocol.
-
-        """
-        self.ssl_context = None
-        if self.url.protocol == "https":
-            self.ssl_context = ssl.SSLContext()
-
     async def connection(self):
         """ Create a connection to the HTTP server.
 
         """
+        # Create a new SSL context. for using it in the HTTPS protocol.
+        ssl_context = None
+        if self.url.protocol == "https":
+            ssl_context = ssl.SSLContext()
+        # Create a new connection to the server.
         self.reader, self.writer = await asyncio.open_connection(
-            *self.url.host, ssl=self.ssl_context)
+            *self.url.host, ssl=ssl_context)
 
     async def send(self):
         """ Send an HTTP Request to an HTTP server
@@ -118,7 +116,7 @@ class HTTPClient:
         self.writer.close()
         return response
 
-    async def call(self):
+    async def fetch(self):
         """ Send request and Receive response
 
         """
@@ -129,17 +127,34 @@ class HTTPClient:
         # Recv the response
         return await self.recv()
 
+
+class HttpRequest(AsyncRequest):
+    """ HttpRequest class
+
+    This class allows us to send a request to and receive a response
+    from an HTTP server synchronously.
+
+    """
+
+    # We will use it to fetch (run) our requests
+    loop = asyncio.get_event_loop()
+
     def fetch(self):
         """ Send request and Receive response
 
         """
-        return self.run(self.call())
+        return self.run(super().fetch())
 
-    def run(self, function):
+    @classmethod
+    def run(cls, callback):
         """ Run a function create with the async/await keywords.
 
         """
-        return self.loop.run_until_complete(function)
+        if cls.loop.is_closed():
+            asyncio.set_event_loop(asyncio.new_event_loop())
+            cls.loop = asyncio.get_event_loop()
+            print("Create a new loop")
+        return cls.loop.run_until_complete(callback)
 
     def close(self):
         """ Close the event loop.
@@ -153,7 +168,7 @@ def __method(method, url, **kwargs):
     and receive a response from it.
 
     """
-    request = HTTPClient(method, url, **kwargs)
+    request = HttpRequest(method, url, **kwargs)
     return request.fetch()
 
 

@@ -2,7 +2,13 @@
 """
 
 from .status_codes import HTTPStatusCodes
-from .client import HTTPClient, get, post, put, delete, head
+from .client import (
+    # classes
+    AsyncRequest, HttpRequest,
+
+    # functions
+    get, post, put, delete, head
+)
 
 
 # Author info
@@ -22,6 +28,9 @@ __all__ = [
     "__email__", "__author__", "__title__", "__url__", "__license__",
     "__date__", "__version__",
 
-    # Classes and functions
-    "HTTPStatusCodes", "HTTPClient", "get", "post", "put", "head"
+    # Classes
+    "HTTPStatusCodes", "HttpRequest", "AsyncRequest",
+
+    # functions
+    "get", "post", "put", "head"
 ]

@@ -168,11 +168,13 @@ class Headers(dict):
         """
         super().__setitem__(key, value)
 
-    def add(self, key, value):
+    def add(self, key, value, replace=False):
         """ Add a header into the headers.
 
         """
-        if key in self:
+        if replace:
+            self.update(key, value)
+        elif key in self:
             raise KeyError(f"this key '{key}' already exists")
         else:
             super().__setitem__(key, value)
@@ -181,7 +183,7 @@ class Headers(dict):
         """ Add the Connection to the headers.
 
         """
-        self.add("Connection", value)
+        self.add("Connection", value, replace)
 
     def host(self, domain, port, replace=False):
         """ Add the Host to the headers.
@@ -191,15 +193,15 @@ class Headers(dict):
         if port not in [80, 443]:
             host += ":" + str(port)
 
-        self.add("Host", host)
+        self.add("Host", host, replace)
 
-    def contentType(self, value):
+    def content_type(self, value):
         """ Add the content type to the headers.
 
         """
         self.add("Content-Type", value)
 
-    def contentLength(self, length):
+    def content_length(self, length):
         """ Add the content length to the headers.
 
         """
