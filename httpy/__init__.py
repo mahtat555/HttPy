@@ -4,10 +4,11 @@
 from .status_codes import HTTPStatusCodes
 from .client import (
     # classes
-    AsyncRequest, HttpRequest,
+    AsyncRequest,
 
     # functions
-    get, post, put, delete, head
+    get, post, put, delete, head,
+    asyncget, asyncpost, asyncput, asyncdelete, asynchead
 )
 
 
@@ -29,8 +30,9 @@ __all__ = [
     "__date__", "__version__",
 
     # Classes
-    "HTTPStatusCodes", "HttpRequest", "AsyncRequest",
+    "HTTPStatusCodes", "AsyncRequest",
 
     # functions
-    "get", "post", "put", "head"
+    "get", "post", "put", "head",
+    "asyncget", "asyncpost", "asyncput", "asynchead"
 ]
