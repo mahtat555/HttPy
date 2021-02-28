@@ -5,35 +5,136 @@
 
 
 import abc
-from json import loads
+from json import loads, decoder
 from base64 import b64encode
 
 
 class HTTPMessage:
-    """ HTTPMessage class
-    This class is used to create a valid HTTP Message (Request or Response).
+    """ Asynchronous HTTP Message.
+    This class is used to create a valid and async HTTP Message
+    (Request or Response).
 
     """
 
-    def __init__(self, startline, headers, body):
+    # In this status, the connection is created.
+    # And we can read the status of the HTTP message.
+    OPENED = 0
+
+    # In this status, status is available.
+    # And we can read the headers of the HTTP message.
+    IN_HEADERS = 1
+
+    # In this status, headers and status are available.
+    # And we can read the body of the HTTP message.
+    IN_BODY = 2
+
+    # The operation is complete.
+    # And the body of the HTTP message is available.
+    DONE = 3
+
+    def __init__(self, startline, headers, body, reader=None):
 
         self.startline = startline
         self.headers = headers
         self.body = body
+
+        # The `readystate` property holds the status of our HTTP message.
+        self.readystate = self.OPENED
+
+        # This stream object used to read from the socket.
+        self.reader = reader
 
     def tostr(self):
         """ This function generates a valid HTTP message
         encoded in ASCII.
 
         """
-        return tohttpmsg(self.startline, self.headers, self.body)
+        # Start line
+        # decodes the elements of `startline`
+        startline = _bytestostr(*self.startline)
+        startline = "{} {} {}".format(*startline).encode()
 
-    async def fromstr(self, reader):
+        # Headers
+        _headers = []
+        for key, value in self.headers.items():
+            # convert the `key` and the `value` to str
+            key, value = _bytestostr(key, value)
+            _headers.append("{}: {}".format(key, value).encode())
+
+        # Empty libe
+        empty_line = b""
+
+        return b"\r\n".join([startline, *_headers, empty_line, self.body])
+
+    async def fromstr(self, read_body=True):
         """ This function converts an HTTP message encoded in ASCII
         into a Python object.
 
         """
-        self.startline, self.headers, self.body = await fromreader(reader)
+        # Start line
+        await self.__read_startline()
+
+        # Headers
+        await self.__read_headers()
+
+        # Body
+        if read_body:
+            await self.read_body()
+
+    async def __read_startline(self):
+        """ The task of this function is to retrieve the
+        start line of an HTTP message.
+
+        """
+        if self.readystate == self.OPENED:
+            line = await self.reader.readline()
+            startline = line.rstrip().split(maxsplit=2)
+            # decodes the elements of `startline`
+            self.startline = _bytestostr(*startline)
+            self.readystate = self.IN_HEADERS
+
+        return self.startline
+
+    async def __read_headers(self):
+        """ The task of this function is to retrieve the
+        headers of an HTTP message.
+
+        """
+        if self.readystate == self.OPENED:
+            self.__read_startline()
+
+        if self.readystate == self.IN_HEADERS:
+            headers = {}
+            async for line in self.reader:
+                line = line.rstrip()
+                if not line:
+                    break
+                key, value = line.split(b":", 1)
+                # convert the `key` and the `value` to str
+                key, value = _bytestostr(key, value)
+                headers[key] = value.strip()
+
+            self.headers = headers
+            self.readystate = self.IN_BODY
+
+        return self.__headers
+
+    async def read_body(self):
+        """ The task of this function is to retrieve the
+        body of an HTTP message.
+
+        """
+        if self.readystate == self.OPENED:
+            self.__read_startline()
+
+        if self.readystate == self.IN_HEADERS:
+            self.__read_headers()
+
+        if self.readystate == self.IN_BODY:
+            self.body = await self.reader.read()
+            self.readystate = self.DONE
+
+        return self.body
 
     @property
     def headers(self):
@@ -49,6 +150,7 @@ class HTTPMessage:
         """
         if _headers is None:
             _headers = {}
+
         if not isinstance(_headers, dict):
             raise TypeError("expected dict")
 
@@ -66,10 +168,13 @@ class HTTPMessage:
         """ Define the body of an HTTP message.
 
         """
+        if _body is None:
+            _body = b""
+
         if isinstance(_body, str):
             _body = _body.encode()
 
-        if not isinstance(_body, bytes) and _body:
+        if not isinstance(_body, bytes):
             raise TypeError("expected str or bytes")
 
         self.__body = _body
@@ -78,8 +183,10 @@ class HTTPMessage:
         """ Returns the json-encoded content of a HTTP Message, if any
 
         """
-
-        return loads(self.__body.replace(b"'", b'"'))
+        try:
+            return loads(self.__body)
+        except decoder.JSONDecodeError:
+            return loads(self.__body.replace(b"'", b'"'))
 
     @abc.abstractproperty
     def startline(self):
@@ -90,15 +197,16 @@ class HTTPMessage:
 
 
 class Request(HTTPMessage):
-    """ Request class
-    This class is used to create a valid HTTP Request.
+    """ Asynchronous HTTP request.
+
+    This class is used to create a valid and async HTTP Request.
 
     """
 
     def __init__(self, method=None, path=None, version=None, headers=None,
-                 body=None):
+                 body=None, reader=None):
 
-        super().__init__((method, path, version), headers, body)
+        super().__init__((method, path, version), headers, body, reader=reader)
 
     @property
     def startline(self):
@@ -125,9 +233,10 @@ class Response(HTTPMessage):
     """
 
     def __init__(self, version=None, statuscode=None, statusmessage=None,
-                 headers=None, body=None):
+                 headers=None, body=None, reader=None):
 
-        super().__init__((version, statuscode, statusmessage), headers, body)
+        super().__init__((version, statuscode, statusmessage), headers,
+                         body, reader=reader)
 
     @property
     def startline(self):
@@ -142,15 +251,10 @@ class Response(HTTPMessage):
 
         """
         self.version, self.statuscode, self.statusmessage = startline
+
         # convert the `statuscode` to int
         if self.statuscode:
             self.statuscode = int(self.statuscode)
-        # convert the `statusmessage` to str
-        if isinstance(self.statusmessage, bytes):
-            self.statusmessage = self.statusmessage.decode()
-        # convert the `version` to str
-        if isinstance(self.version, bytes):
-            self.version = self.version.decode()
 
     def __repr__(self):
         return "<Response [{}]>".format(self.statuscode)
@@ -211,14 +315,10 @@ class Headers(dict):
         """ Add the `Authorization` header to the headers.
 
         """
-        user, password = auth
-        if isinstance(user, bytes):
-            user = user.decode()
+        # decodes the username and password
+        username, password = _bytestostr(*auth)
 
-        if isinstance(password, bytes):
-            password = password.decode()
-
-        authorization = "{}:{}".format(user, password)
+        authorization = "{}:{}".format(username, password)
         authorization = b64encode(authorization.encode())
         authorization = "Basic " + authorization.decode()
 
@@ -228,72 +328,25 @@ class Headers(dict):
         raise TypeError("'Headers' object does not support item assignment")
 
 
-async def fromreader(reader):
-    """This function converts data from an HTTP message (Request or Response)
-    into a Python object.
+def _bytestostr(*args):
+    """ This function decodes a set of bytes to str.
 
     """
-    # Start line
-    line = await reader.readline()
-    startline = line.rstrip().split(maxsplit=2)
 
-    # Headers
-    headers = {}
-    async for line in reader:
-        line = line.rstrip()
-        if not line:
-            break
-        key, value = line.split(b":", 1)
-        # convert the `key` to str
-        if isinstance(key, bytes):
-            key = key.decode()
-        # convert the `value` to str
-        if isinstance(value, bytes):
-            value = value.decode()
-        headers[key] = value.strip()
+    if len(args) == 0:
+        return None
 
-    # Body
-    body = await reader.read()
+    if len(args) == 1:
+        if isinstance(args[0], bytes):
+            return args[0].decode()
+        return args
 
-    return startline, headers, body
+    decodes = []
+    append = decodes.append
 
+    for arg in args:
+        if isinstance(arg, bytes):
+            arg = arg.decode()
+        append(arg)
 
-def tohttpmsg(start_line, headers, body=b""):
-    """Create a valid HTTP message encoded in ASCII.
-
-    """
-    # Start line
-    if not isinstance(start_line, (list, tuple)):
-        raise TypeError("expected list or tuple")
-
-    startline = []
-    for value in start_line:
-        if isinstance(value, bytes):
-            value = value.decode()
-        startline.append(value)
-
-    startline = "{} {} {}".format(*startline).encode()
-
-    # Headers
-    if not isinstance(headers, dict):
-        raise TypeError("expected dict")
-
-    _headers = []
-    for key, value in headers.items():
-        if isinstance(key, bytes):
-            key = key.decode()
-        if isinstance(value, bytes):
-            value = value.decode()
-        _headers.append("{}: {}".format(key, value).encode())
-
-    # Empty libe
-    empty_line = b""
-
-    # Body
-    if isinstance(body, str):
-        body = body.encode()
-
-    if not isinstance(body, bytes):
-        raise TypeError("expected bytes or str")
-
-    return b"\r\n".join([startline, *_headers, empty_line, body])
+    return decodes

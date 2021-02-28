@@ -66,8 +66,9 @@ class URL:
         try:
             protocol, access_path = url.split("://", 1)
             protocol = protocol.lower()
-        except ValueError:
-            raise URLError("Invalid URL")
+        except ValueError as cause:
+            raise URLError("Invalid URL") from cause
+
         self.protocol = protocol
 
         # path

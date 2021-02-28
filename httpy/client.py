@@ -109,16 +109,17 @@ class AsyncRequest:
         """
         self.writer.write(self.request.tostr())
 
-    async def recv(self):
+    async def recv(self, read_body=True):
         """ Receive a response from an HTTP server.
 
         """
-        response = Response()
-        await response.fromstr(self.reader)
-        self.writer.close()
+        response = Response(reader=self.reader)
+        await response.fromstr(read_body)
+        if read_body:
+            self.writer.close()
         return response
 
-    async def fetch(self):
+    async def fetch(self, read_body=True):
         """ Send an HTTP request and Receive a promise (response).
 
         """
@@ -127,7 +128,7 @@ class AsyncRequest:
         # Send the request
         await self.send()
         # Recv the promise (response)
-        return await self.recv()
+        return await self.recv(read_body)
 
     @staticmethod
     def fetchall(callbacks, loop=None, return_exceptions=False):
@@ -170,58 +171,63 @@ class AsyncRequest:
         """
         self.loop.close()
 
+    async def __aenter__(self):
+        return await self.fetch(read_body=False)
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.writer.close()
+
 
 ############################
 ##  Asynchronous methods  ##
 ############################
 
-async def __asyncmethod(method, url, **kwargs):
+def __asyncmethod(method, url, **kwargs):
     """ Send a request to a server, with a given method,
     and receive a response from it.
 
     """
-    request = AsyncRequest(method, url, **kwargs)
-    return await request.fetch()
+    return AsyncRequest(method, url, **kwargs)
 
 
-async def asyncget(url, **kwargs):
+def asyncget(url, **kwargs):
     """ Send an HTTP request of type GET to an HTTP server, and receive
     an HTTP response from it.
 
     """
-    return await __asyncmethod("GET", url, **kwargs)
+    return __asyncmethod("GET", url, **kwargs)
 
 
-async def asyncpost(url, **kwargs):
+def asyncpost(url, **kwargs):
     """ Send an HTTP request of type POST to an HTTP server, and receive
     an HTTP response from it.
 
     """
-    return await __asyncmethod("POST", url, **kwargs)
+    return __asyncmethod("POST", url, **kwargs)
 
 
-async def asyncput(url, **kwargs):
+def asyncput(url, **kwargs):
     """ Send an HTTP request of type PUT to an HTTP server, and receive
     an HTTP response from it.
 
     """
-    return await __asyncmethod("PUT", url, **kwargs)
+    return __asyncmethod("PUT", url, **kwargs)
 
 
-async def asyncdelete(url, **kwargs):
+def asyncdelete(url, **kwargs):
     """ Send an HTTP request of type DELETE to an HTTP server, and receive
     an HTTP response from it.
 
     """
-    return await __asyncmethod("DELETE", url, **kwargs)
+    return __asyncmethod("DELETE", url, **kwargs)
 
 
-async def asynchead(url, **kwargs):
+def asynchead(url, **kwargs):
     """ Send an HTTP request of type HEAD to an HTTP server, and receive
     an HTTP response from it.
 
     """
-    return await __asyncmethod("HEAD", url, **kwargs)
+    return __asyncmethod("HEAD", url, **kwargs)
 
 
 ###########################
