@@ -110,3 +110,174 @@ b'{"page":1,"per_page":6,"total":12,"total_pages":2,"data":[{"id":1,"email":"geo
 #### Example 3
 
 **Synchronous and asynchronous requests**
+
+Here is a script PHP ([server](http://localhost?name=A&sleep=1)), that accepts an HTTP request (GET) with params:
+`name` (name of client) and `sleep` (The time the server will take to
+generate the response).
+
+```PHP
+<?php
+
+if (isset($_GET["sleep"]) && isset($_GET["name"])) {
+    // The time the server will take to generate the response
+    $time = intval($_GET["sleep"]);
+    // The name of the client
+    $name = $_GET["name"];
+    // Sleeping the server for a given time before the response is generated
+    sleep($time);
+    // Generate the response
+    echo $name . ": I am sleep " . $time . " seconds.";
+} else {
+    echo "missing 2 required params: 'name' and 'sleep'";
+}
+
+```
+
+Now we will create two python scripts. In the first, we will create some requests (GET) asynchronously with our `httpy` library, and in the second we will create some requests (GET) synchronously with `urllib` library.
+
+- with our `httpy` library
+
+```python
+>>> import time
+>>> from httpy import AsyncRequest, asyncget
+>>>
+>>> urls = [
+...     "http://localhost/?name=A&sleep=3",
+...     "http://localhost/?name=B&sleep=1",
+...     "http://localhost/?name=C&sleep=4",
+...     "http://localhost/?name=D&sleep=2"
+... ]
+>>>
+>>> async def get(url):
+...     """ Send a request asynchronously.
+...     """
+...     response = await asyncget(url).fetch()
+...     print(response.body.decode())
+...     return response
+...
+>>> def main():
+...     # Used the fetchall_run() method to send some requests asynchronously.
+...     start = time.perf_counter()
+...     requests = [get(url) for url in urls]
+...     result = AsyncRequest.fetchall_run(requests)
+...     end = time.perf_counter() - start
+...     print(f"--> The time taken is {end:0.2f} seconds.")
+...     print(result)
+...
+>>> main()
+B: I am sleep 1 seconds.
+D: I am sleep 2 seconds.
+A: I am sleep 3 seconds.
+C: I am sleep 4 seconds.
+--> The time taken is 4.02 seconds.
+[<Response [200]>, <Response [200]>, <Response [200]>, <Response [200]>]
+>>>
+```
+
+- with `urllib` library
+
+```python
+>>> import time
+>>> import urllib.request
+>>>
+>>> urls = [
+...     "http://localhost/?name=A&sleep=3",
+...     "http://localhost/?name=B&sleep=1",
+...     "http://localhost/?name=C&sleep=4",
+...     "http://localhost/?name=D&sleep=2"
+... ]
+>>>
+>>> def get(url):
+...     """ Send a request synchronously.
+...     """
+...     with urllib.request.urlopen(url) as response:
+...         print(response.read().decode())
+...         return response
+...
+>>> def main():
+...     # Send some requests synchronously.
+...     start = time.perf_counter()
+...     result = []
+...     for url in urls:
+...         result.append(get(url))
+...     end = time.perf_counter() - start
+...     print(f"--> The time taken is {end:0.2f} seconds.")
+...     print(result)
+...
+>>> main()
+A: I am sleep 3 seconds.
+B: I am sleep 1 seconds.
+C: I am sleep 4 seconds.
+D: I am sleep 2 seconds.
+--> The time taken is 10.02 seconds.
+[<http.client.HTTPResponse object at 0x7faef0a30df0>, <http.client.HTTPResponse object at 0x7faef0a30f40>, <http.client.HTTPResponse object at 0x7faef0a30fa0>, <http.client.HTTPResponse object at 0x7faef0a30fd0>]
+>>>
+```
+
+#### Example 4
+
+**httpy with asyncio**
+
+```python
+>>> import asyncio
+>>> from httpy import asyncget
+>>>
+>>> async def main():
+...     async with asyncget("https://www.python.org/") as response:
+...         if response.statuscode == 200 :
+...             print("Content-Type:", response.headers["Content-Type"])
+...             html = await response.read_body()
+...             print("Body:", html[:15], "...")
+...
+>>> loop = asyncio.get_event_loop()
+>>> loop.run_until_complete(main())
+Content-Type: text/html; charset=utf-8
+Body: b'<!doctype html>' ...
+>>>
+```
+
+- Used the gather() and run_until_complete() methods to send some requests asynchronously.
+
+```python
+>>> import time
+>>> import asyncio
+>>> from httpy import asyncget
+>>>
+>>> async def get(url):
+...     """ Send a request asynchronously.
+...     """
+...     response = await asyncget(url).fetch()
+...     print(response.body.decode())
+...     return response
+...
+>>> urls = [
+...     "http://localhost/?name=A&sleep=3",
+...     "http://localhost/?name=B&sleep=1",
+...     "http://localhost/?name=C&sleep=4",
+...     "http://localhost/?name=D&sleep=2"
+... ]
+>>>
+>>> loop = asyncio.get_event_loop()
+>>>
+>>> # Used the gather() and run_until_complete() methods to send
+>>> # some requests asynchronously.
+>>> start = time.perf_counter()
+>>> requests = [get(url) for url in urls]
+>>> coros = asyncio.gather(*requests)
+>>>
+>>> try:
+...     result = loop.run_until_complete(coros)
+... finally:
+...     loop.close()
+...
+B: I am sleep 1 seconds.
+D: I am sleep 2 seconds.
+A: I am sleep 3 seconds.
+C: I am sleep 4 seconds.
+>>> end = time.perf_counter() - start
+>>> print(f"--> The time taken is {end:0.2f} seconds.")
+--> The time taken is 4.01 seconds.
+>>> print(result)
+[<Response [200]>, <Response [200]>, <Response [200]>, <Response [200]>]
+>>>
+```
